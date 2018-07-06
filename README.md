@@ -10,4 +10,4 @@ Blasteroids is a modern Asteroids-like game where you control a ship and survive
 The objective of Blasteroids is to survive and collect points by destroying asteroids for as long as you can.
 
 ## About
-This project was made using Allegro 5.2.4.0 via Visual Studio 2017 with the C programming language.
+This project was made using [Allegro](https://liballeg.org/) [5.2.4.0](https://liballeg.org/download.html) via Visual Studio 2017 with the C programming language. Blasteroids is an exercise given by the book Head First C by [O'Reilly Media.](https://www.oreilly.com/)
