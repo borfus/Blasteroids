@@ -1,7 +1,7 @@
-//#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC
 #include <stdio.h>
 #include <stdlib.h>
-//#include <crtdbg.h>  
+#include <crtdbg.h>  
 #include <time.h>
 #include <errno.h>
 #include <string.h>
@@ -16,6 +16,8 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 
 #define TOTAL_POSSIBLE_BLASTS 30
 #define TOTAL_POSSIBLE_ASTEROIDS 40
@@ -218,7 +220,7 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 int main(int argc, char *argv[])
 {
 	// Check for memory leaks in Visual Studio
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	// Initialize Allegro and set up display
 	
 	srand(time(NULL));
@@ -227,6 +229,8 @@ int main(int argc, char *argv[])
 	{
 		error("Failed to initialize");
 	}
+	al_install_audio();
+	al_init_acodec_addon();
 	al_init_primitives_addon();
 	al_init_font_addon();
 	al_init_ttf_addon();
@@ -234,6 +238,15 @@ int main(int argc, char *argv[])
 	al_install_joystick();
 	al_set_new_display_flags(ALLEGRO_WINDOWED);
 	display = al_create_display(SCREEN_WIDTH, SCREEN_HEIGHT);
+	al_reserve_samples(100);
+
+	ALLEGRO_SAMPLE *sample_shoot = al_load_sample("Shoot.ogg");
+	ALLEGRO_SAMPLE *sample_ship_hit = al_load_sample("Spaceship Hit.ogg");
+	ALLEGRO_SAMPLE *sample_powerup = al_load_sample("Powerup.ogg");
+	ALLEGRO_SAMPLE *sample_asteroid_hit = al_load_sample("Hit Asteroid.ogg");
+	ALLEGRO_SAMPLE *sample_asteroid_destroy_1 = al_load_sample("Asteroid Destroy 1.ogg");
+	ALLEGRO_SAMPLE *sample_asteroid_destroy_2 = al_load_sample("Asteroid Destroy 2.ogg");
+	ALLEGRO_SAMPLE *sample_asteroid_destroy_3 = al_load_sample("Asteroid Destroy 3.ogg");
 
 	while (!closed)
 	{
@@ -327,6 +340,7 @@ int main(int argc, char *argv[])
 						{
 							if (collide_ship(asteroid[i], &spaceship))
 							{
+								al_play_sample(sample_ship_hit, 0.1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 								spaceship.color = RED;
 								last_hit = i;
 								spaceship.lives--;
@@ -376,19 +390,23 @@ int main(int argc, char *argv[])
 									{
 										if (asteroid[i]->scale == 1)
 										{
+											al_play_sample(sample_asteroid_destroy_1, 0.075, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 											score += 100;
 										}
 										else if (asteroid[i]->scale == 2)
 										{
+											al_play_sample(sample_asteroid_destroy_2, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 											score += 400;
 										}
 										else if (asteroid[i]->scale == 3)
 										{
+											al_play_sample(sample_asteroid_destroy_3, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 											score += 1000;
 										}
 
 										if (asteroid[i]->scale == 1)
 										{
+											al_play_sample(sample_asteroid_destroy_1, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 											free(asteroid[i]);
 											asteroid[i] = NULL;
 										}
@@ -404,6 +422,10 @@ int main(int argc, char *argv[])
 												}
 											}
 										}
+									}
+									else
+									{
+										al_play_sample(sample_asteroid_hit, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 									}
 									free(blast[j]);
 									blast[j] = NULL;
@@ -429,6 +451,7 @@ int main(int argc, char *argv[])
 							blast[i]->heading = spaceship.heading;
 							blast[i]->sx = spaceship.sx;
 							blast[i]->sy = spaceship.sy;
+							al_play_sample(sample_shoot, 0.1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 							shot = false;
 							break;
 						}
@@ -514,6 +537,14 @@ int main(int argc, char *argv[])
 				al_uninstall_keyboard();
 				al_uninstall_joystick();
 				al_destroy_display(display);
+				al_destroy_sample(sample_shoot);
+				al_destroy_sample(sample_ship_hit);
+				al_destroy_sample(sample_powerup);
+				al_destroy_sample(sample_asteroid_hit);
+				al_destroy_sample(sample_asteroid_destroy_1);
+				al_destroy_sample(sample_asteroid_destroy_2);
+				al_destroy_sample(sample_asteroid_destroy_3);
+				al_uninstall_audio();
 				al_shutdown_primitives_addon();
 				al_shutdown_ttf_addon();
 				al_shutdown_font_addon();
