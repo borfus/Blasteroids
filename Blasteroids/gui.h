@@ -1,4 +1,5 @@
 #include "spaceship.h"
+
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro_font.h>
 

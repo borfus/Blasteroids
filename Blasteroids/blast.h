@@ -14,7 +14,7 @@ typedef struct
 	ALLEGRO_COLOR color;
 } Blast;
 
-Blast create_blast(void);
+Blast create_blast(int scale);
 void draw_blast(Blast *b);
 void move_blast(Blast *b);
 #endif

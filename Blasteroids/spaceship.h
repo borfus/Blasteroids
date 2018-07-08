@@ -3,7 +3,7 @@
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 
-#define SHIP_MAX_SPEED 3.0
+#define SHIP_MAX_SPEED 5.0
 #define SHIP_ACCELERATION 0.1
 #define SHIP_BRAKE_SPEED 0.1
 #define SHIP_DRIFT_SPEED 0.025

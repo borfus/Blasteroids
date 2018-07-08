@@ -4,7 +4,6 @@
 #include <string.h>
 #include "spaceship.h"
 #include "blasteroids.h"
-#include <Windows.h>
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>

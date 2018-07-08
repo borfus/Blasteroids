@@ -1,16 +1,19 @@
-#define _CRTDBG_MAP_ALLOC
+//#define _CRTDBG_MAP_ALLOC
 #include <stdio.h>
 #include <stdlib.h>
-#include <crtdbg.h>  
+//#include <crtdbg.h>  
 #include <time.h>
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+
 #include "asteroid.h"
 #include "spaceship.h"
+#include "powerup.h"
 #include "blasteroids.h"
 #include "blast.h"
 #include "gui.h"
+
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
@@ -24,6 +27,7 @@
 #define STARTING_ASTEROID_NUM 10
 #define BLACK al_map_rgb(0, 0, 0)
 #define RED_TEXT al_map_rgb(255, 17, 30)
+#define PURPLE al_map_rgb(255, 0, 255)
 
 void error(char *msg)
 {
@@ -99,7 +103,6 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 					case ALLEGRO_KEY_Z:
 					{
 						shot = true;
-						//keys.space = true;
 					} break;
 
 					case ALLEGRO_KEY_ESCAPE:
@@ -220,11 +223,12 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 int main(int argc, char *argv[])
 {
 	// Check for memory leaks in Visual Studio
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	// Initialize Allegro and set up display
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	
+	// Random number seed setup
 	srand(time(NULL));
 
+	// Initialize Allegro and set up display, addons, and install various tools
 	if (!al_init())
 	{
 		error("Failed to initialize");
@@ -240,14 +244,27 @@ int main(int argc, char *argv[])
 	display = al_create_display(SCREEN_WIDTH, SCREEN_HEIGHT);
 	al_reserve_samples(100);
 
+	// Sound files used in Blasteroids
 	ALLEGRO_SAMPLE *sample_shoot = al_load_sample("Shoot.ogg");
 	ALLEGRO_SAMPLE *sample_ship_hit = al_load_sample("Spaceship Hit.ogg");
 	ALLEGRO_SAMPLE *sample_powerup = al_load_sample("Powerup.ogg");
+	ALLEGRO_SAMPLE *sample_powerup_shoot = al_load_sample("Powerup Shoot.ogg");
 	ALLEGRO_SAMPLE *sample_asteroid_hit = al_load_sample("Hit Asteroid.ogg");
 	ALLEGRO_SAMPLE *sample_asteroid_destroy_1 = al_load_sample("Asteroid Destroy 1.ogg");
 	ALLEGRO_SAMPLE *sample_asteroid_destroy_2 = al_load_sample("Asteroid Destroy 2.ogg");
 	ALLEGRO_SAMPLE *sample_asteroid_destroy_3 = al_load_sample("Asteroid Destroy 3.ogg");
 
+	// Keyboard events thread setup and start
+	void *result;
+	ALLEGRO_THREAD *key_thread = al_create_thread(read_key_events, &result);
+	al_start_thread(key_thread);
+
+	// Font setup with various settings
+	ALLEGRO_FONT *font100 = al_load_font("font.ttf", 100, 0);
+	ALLEGRO_FONT *font30 = al_load_font("font.ttf", 30, 0);
+	ALLEGRO_FONT *font18 = al_load_font("font.ttf", 18, 0);
+
+	// Main game loop start
 	while (!closed)
 	{
 		restart = false;
@@ -272,20 +289,18 @@ int main(int argc, char *argv[])
 				asteroid[i] = NULL;
 			}
 
-			// Keyboard events
-			void *result;
-			ALLEGRO_THREAD *key_thread = al_create_thread(read_key_events, &result);
-			al_start_thread(key_thread);
+			Powerup *powerup = NULL;
 
-			ALLEGRO_FONT *font100 = al_load_font("FiraCode-Medium.ttf", 100, 0);
-			ALLEGRO_FONT *font30 = al_load_font("FiraCode-Medium.ttf", 30, 0);
-			ALLEGRO_FONT *font18 = al_load_font("FiraCode-Medium.ttf", 18, 0);
 			char score_text[50];
 			char lives_text[10];
 
 			// Main game loop
 			bool not_hit = true;
 			int last_hit;
+			int ptimer = 0;
+			bool pspawned = false;
+			bool powerup_enabled = false;
+			int petimer = 0;
 			while (!restart && !closed)
 			{
 				al_clear_to_color(BLACK);
@@ -306,6 +321,56 @@ int main(int argc, char *argv[])
 					sprintf(score_text, "Final score: %i", score);
 					draw_text(font30, score_text, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50, RED_TEXT, ALLEGRO_ALIGN_CENTER);
 					draw_text(font18, "Press 'R' to restart or 'ESC' to quit.", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, RED_TEXT, ALLEGRO_ALIGN_CENTER);
+				}
+
+				if (ptimer / 60 >= 30 && !pspawned)
+				{
+					ptimer = 0;
+					if (powerup)
+					{
+						free(powerup);
+						powerup = NULL;
+					}
+					powerup = malloc(sizeof(Powerup));
+					*powerup = create_powerup();
+					pspawned = true;
+				}
+				else if (ptimer / 60 >= 7 && pspawned)
+				{
+					ptimer = 0;
+					if (powerup)
+					{
+						free(powerup);
+						powerup = NULL;
+					}
+					pspawned = false;
+				}
+				
+				// Change ship bullets
+				if (petimer / 60 < 10 && powerup_enabled)
+				{
+					spaceship.color = PURPLE;
+					petimer++;
+				}
+				else if (petimer / 60 >= 10 && powerup_enabled)
+				{
+					petimer = 0;
+					powerup_enabled = false;
+					spaceship.color = GREEN;
+				}
+
+				if (powerup)
+				{
+					draw_powerup(powerup);
+
+					if (collide_powerup(powerup, &spaceship))
+					{
+						al_play_sample(sample_powerup, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+						powerup_enabled = true;
+						ptimer = 0;
+						free(powerup);
+						powerup = NULL;
+					}
 				}
 
 				for (int i = 0; i < TOTAL_POSSIBLE_ASTEROIDS; i++)
@@ -348,14 +413,28 @@ int main(int argc, char *argv[])
 							}
 							else
 							{
-								spaceship.color = GREEN;
+								if (powerup_enabled)
+								{
+									spaceship.color = PURPLE;
+								}
+								else
+								{
+									spaceship.color = GREEN;
+								}
 							}
 						}
 						else
 						{
 							if (!collide_ship(asteroid[last_hit], &spaceship))
 							{
-								spaceship.color = GREEN;
+								if (powerup_enabled)
+								{
+									spaceship.color = PURPLE;
+								}
+								else
+								{
+									spaceship.color = GREEN;
+								}
 								not_hit = true;
 							}
 						}
@@ -443,15 +522,29 @@ int main(int argc, char *argv[])
 						if (!blast[i])
 						{
 							blast[i] = malloc(sizeof(Blast));
-							*blast[i] = create_blast();
+							if (powerup_enabled)
+							{
+								*blast[i] = create_blast(7);
+							}
+							else
+							{
+								*blast[i] = create_blast(1);
+							}
 							if (!(&blast[i]))
 							{
 								error("Could not create blast");
 							}
 							blast[i]->heading = spaceship.heading;
-							blast[i]->sx = spaceship.sx;
-							blast[i]->sy = spaceship.sy;
-							al_play_sample(sample_shoot, 0.1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+							blast[i]->sx = spaceship.sx + sin(blast[i]->heading) * (blast[i]->speed * 1.5);
+							blast[i]->sy = spaceship.sy - cos(blast[i]->heading) * (blast[i]->speed * 1.5);
+							if (powerup_enabled)
+							{
+								al_play_sample(sample_powerup_shoot, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+							}
+							else
+							{
+								al_play_sample(sample_shoot, 0.1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+							}
 							shot = false;
 							break;
 						}
@@ -517,22 +610,31 @@ int main(int argc, char *argv[])
 				}
 
 				al_flip_display();
-				al_rest(0.0167); // Around 60fps
+				al_rest(0.01666666667); // Around 60fps
+				ptimer++;
 			}
 			// Free memory
+			if (powerup)
+			{
+				free(powerup);
+				powerup = NULL;
+			}
 			for (int i = 0; i < TOTAL_POSSIBLE_ASTEROIDS; i++)
 			{
 				free(asteroid[i]);
+				asteroid[i] = NULL;
 				if (i < TOTAL_POSSIBLE_BLASTS)
 				{
 					free(blast[i]);
+					blast[i] = NULL;
 				}
 			}
-			al_destroy_font(font100);
-			al_destroy_font(font30);
-			al_destroy_font(font18);
+			
 			if (closed)
 			{
+				al_destroy_font(font100);
+				al_destroy_font(font30);
+				al_destroy_font(font18);
 				al_destroy_thread(key_thread);
 				al_uninstall_keyboard();
 				al_uninstall_joystick();
@@ -548,6 +650,7 @@ int main(int argc, char *argv[])
 				al_shutdown_primitives_addon();
 				al_shutdown_ttf_addon();
 				al_shutdown_font_addon();
+				al_uninstall_system();
 			}
 		}
 		else

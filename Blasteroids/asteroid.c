@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
 #include "asteroid.h"
 #include "blasteroids.h"
 #include "spaceship.h"
 #include "blast.h"
+
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
@@ -45,7 +47,7 @@ Asteroid create_asteroid(Spaceship *s)
 	Asteroid asteroid;
 	if (!&asteroid)
 	{
-		printf("Could not create asteroid: %s\n", strerror(errno));
+		//printf("Could not create asteroid: %s\n", strerror(errno));
 		exit(1);
 	}
 
@@ -129,7 +131,7 @@ void move_asteroid(Asteroid *a)
 int collide_blast(Asteroid *a, Blast *b)
 {
 	int asteroid_comp = 18 * a->scale;
-	int blast_comp = 2;
+	int blast_comp = 2 * b->scale;
 	if (((b->sx + blast_comp) >= (a->sx - asteroid_comp) && (b->sx - blast_comp) <= (a->sx + asteroid_comp)) &&
 		((b->sy + blast_comp) >= (a->sy - asteroid_comp) && (b->sy - blast_comp) <= (a->sy + asteroid_comp)))
 	{

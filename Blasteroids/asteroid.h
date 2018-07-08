@@ -1,5 +1,6 @@
 #include "blast.h"
 #include "spaceship.h"
+
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 
