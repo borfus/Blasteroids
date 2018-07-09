@@ -1,10 +1,14 @@
+// Local includes
 #include "spaceship.h"
 
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 
+// Draw any text with a font, color, and position
+// Takes font, text, position, color, and flags for al_draw_text() function
 void draw_text(ALLEGRO_FONT *font, char *text, int x, int y, ALLEGRO_COLOR color, int flag)
 {
 	ALLEGRO_TRANSFORM transform;
@@ -14,6 +18,8 @@ void draw_text(ALLEGRO_FONT *font, char *text, int x, int y, ALLEGRO_COLOR color
 	al_draw_text(font, color, x, y, flag, text);
 }
 
+// If more than 0, draw smaller spaceships as lives
+// Takes position, life number, and scale of the spaceships
 void draw_lives(int x, int y, int lives, float scale)
 {
 	ALLEGRO_TRANSFORM transform;

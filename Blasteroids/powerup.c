@@ -1,13 +1,16 @@
+// Local includes
 #include "powerup.h"
 #include "blasteroids.h"
 #include "spaceship.h"
 
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 
 #define YELLOW al_map_rgb(255, 255, 0)
 
+// Draws the powerup on screen. Takes a powerup address.
 void draw_powerup(Powerup *p)
 {
 	ALLEGRO_TRANSFORM transform;
@@ -23,6 +26,7 @@ void draw_powerup(Powerup *p)
 	al_draw_line(10, -5, -10, 20, p->color, 2.0f);
 }
 
+// Creates and returns a powerup struct with random x and y values
 Powerup create_powerup()
 {
 	Powerup p;
@@ -32,8 +36,10 @@ Powerup create_powerup()
 	return p;
 }
 
+// Checks for powerup and spaceship collision. Takes a powerup and spaceship address.
 int collide_powerup(Powerup *p, Spaceship *s)
 {
+	// Compensation values to account for the size of the structs
 	int spaceship_comp = 11;
 	int powerup_comp_x = 11;
 	int powerup_comp_y = 20;

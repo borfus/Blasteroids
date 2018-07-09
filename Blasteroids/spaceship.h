@@ -1,5 +1,7 @@
 #ifndef _SPACESHIPH_
 #define _SPACESHIPH_
+
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 
@@ -12,6 +14,7 @@
 #define GREEN al_map_rgb(0, 255, 0)
 #define RED al_map_rgb(255, 0, 0)
 
+// Spaceship struct
 typedef struct
 {
 	double sx;

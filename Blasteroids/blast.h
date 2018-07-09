@@ -1,8 +1,11 @@
 #ifndef _BLASTH_
 #define _BLASTH_
+
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 
+// Blast struct
 typedef struct
 {
 	float sx;

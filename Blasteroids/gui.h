@@ -1,5 +1,7 @@
+// Local includes
 #include "spaceship.h"
 
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro_font.h>
 

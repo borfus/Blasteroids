@@ -1,8 +1,11 @@
+// Local includes
 #include "spaceship.h"
 
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 
+// Powerup struct
 typedef struct
 {
 	float sx;

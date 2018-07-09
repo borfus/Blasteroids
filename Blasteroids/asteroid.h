@@ -1,9 +1,12 @@
+// Local includes
 #include "blast.h"
 #include "spaceship.h"
 
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 
+// Asteroid struct
 typedef struct
 {
 	float sx;

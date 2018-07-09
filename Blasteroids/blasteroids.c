@@ -1,12 +1,13 @@
 //#define _CRTDBG_MAP_ALLOC
 #include <stdio.h>
 #include <stdlib.h>
-//#include <crtdbg.h>  
+//#include <crtdbg.h>  // Required under <stdlib.h> based on MS documentation
 #include <time.h>
 #include <errno.h>
 #include <string.h>
 #include <math.h>
 
+// Local includes
 #include "asteroid.h"
 #include "spaceship.h"
 #include "powerup.h"
@@ -14,6 +15,7 @@
 #include "blast.h"
 #include "gui.h"
 
+// Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
@@ -29,12 +31,14 @@
 #define RED_TEXT al_map_rgb(255, 17, 30)
 #define PURPLE al_map_rgb(255, 0, 255)
 
+// Error function used to catch various errors that might occur.
 void error(char *msg)
 {
 	printf("%s: %s\n", msg, strerror(errno));
 	exit(1);
 }
 
+// Key struct
 typedef struct
 {
 	bool up;
@@ -51,6 +55,8 @@ bool shot = false;
 bool restart = false;
 unsigned int score = 0;
 
+// Thread function that is used to catch inputs from the player. Because it uses an Allegro thread, it must
+// always return a void pointer and accept an ALLEGRO_THREAD and void pointer as parameters.
 void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 {
 	for (;;)
@@ -65,11 +71,12 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 			ALLEGRO_EVENT event;
 			al_wait_for_event(queue, &event);
 
-			// Keyboard/Joystick events down
+			// Keyboard/Joystick events 'pressed' down
 			if (event.type == ALLEGRO_EVENT_KEY_DOWN || event.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN)
 			{
 				switch (event.keyboard.keycode)
 				{
+					// Rotate left
 					case ALLEGRO_KEY_A:
 					case ALLEGRO_KEY_LEFT:
 					{
@@ -77,6 +84,7 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 						keys.left = true;
 					} break;
 
+					// Rotate right
 					case ALLEGRO_KEY_D:
 					case ALLEGRO_KEY_RIGHT:
 					{
@@ -84,6 +92,7 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 						keys.right = true;
 					} break;
 
+					// Accelerate
 					case ALLEGRO_KEY_W:
 					case ALLEGRO_KEY_UP:
 					{
@@ -91,6 +100,7 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 						keys.down = false;
 					} break;
 
+					// Decelerate
 					case ALLEGRO_KEY_S:
 					case ALLEGRO_KEY_DOWN:
 					{
@@ -98,6 +108,7 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 						keys.up = false;
 					} break;
 
+					// Shoot blast
 					case ALLEGRO_KEY_J:
 					case ALLEGRO_KEY_SPACE:
 					case ALLEGRO_KEY_Z:
@@ -105,11 +116,13 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 						shot = true;
 					} break;
 
+					// Closes the game
 					case ALLEGRO_KEY_ESCAPE:
 					{
 						closed = true;
 					} break;
 
+					// Restarts the game
 					case ALLEGRO_KEY_R:
 					{
 						restart = true;
@@ -119,26 +132,31 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 					{
 					} break;
 				}
-							
+				
+				// Shoot blast
 				if (event.joystick.button == 1)
 				{
 					shot = true;
 				}
+				// Rotate right
 				if (event.joystick.button == 10)
 				{
 					keys.right = true;
 					keys.left = false;
 				}
+				// Rotate left
 				if (event.joystick.button == 11)
 				{
 					keys.left = true;
 					keys.right = false;
 				}
+				// Decelerate
 				if (event.joystick.button == 12)
 				{
 					keys.down = true;
 					keys.up = false;
 				}
+				// Accelerate
 				if (event.joystick.button == 13)
 				{
 					keys.up = true;
@@ -205,6 +223,7 @@ void* read_key_events(ALLEGRO_THREAD *thread, void *a)
 				}
 			}
 
+			// Closes game if "X" button on window clicked
 			if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
 			{
 				closed = true;
@@ -264,13 +283,14 @@ int main(int argc, char *argv[])
 	ALLEGRO_FONT *font30 = al_load_font("font.ttf", 30, 0);
 	ALLEGRO_FONT *font18 = al_load_font("font.ttf", 18, 0);
 
-	// Main game loop start
+	// Main game loop start. Outer loop that determines whether game exits completely or not.
 	while (!closed)
 	{
 		restart = false;
 		score = 0;
 		if (display)
 		{
+			// Create spaceship, blast, asteroid, and powerup structs/pointer arrays
 			Spaceship spaceship = create_spaceship();
 			if (!(&spaceship))
 			{
@@ -293,18 +313,19 @@ int main(int argc, char *argv[])
 
 			char score_text[50];
 			char lives_text[10];
-
-			// Main game loop
+			
 			bool not_hit = true;
 			int last_hit;
 			int ptimer = 0;
 			bool pspawned = false;
 			bool powerup_enabled = false;
 			int petimer = 0;
+			// Main game loop determines whether the user has restarted the game or not.
 			while (!restart && !closed)
 			{
 				al_clear_to_color(BLACK);
 				
+				// Draw score and lives
 				sprintf(score_text, "Score: %i", score);
 				draw_text(font30, score_text, 20, 20, al_map_rgb(135, 206, 250), 0);
 				sprintf(lives_text, "Lives: ");
@@ -315,6 +336,7 @@ int main(int argc, char *argv[])
 					draw_ship(&spaceship);
 					move_ship(&spaceship);
 				}
+				// Draw game over screen
 				else
 				{
 					draw_text(font100, "GAME OVER", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 150, RED_TEXT, ALLEGRO_ALIGN_CENTER);
@@ -323,7 +345,11 @@ int main(int argc, char *argv[])
 					draw_text(font18, "Press 'R' to restart or 'ESC' to quit.", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100, RED_TEXT, ALLEGRO_ALIGN_CENTER);
 				}
 
-				if (ptimer / 60 >= 30 && !pspawned)
+				// Spawn powerup after 30 seconds
+				int spawn_time = 5;
+				int spawn_delay = 7;
+				int powerup_buff_time = 10;
+				if (ptimer / 60 >= spawn_time && !pspawned)
 				{
 					ptimer = 0;
 					if (powerup)
@@ -335,7 +361,8 @@ int main(int argc, char *argv[])
 					*powerup = create_powerup();
 					pspawned = true;
 				}
-				else if (ptimer / 60 >= 7 && pspawned)
+				// Allows user 7 seconds to grab the powerup before it disappears
+				else if (ptimer / 60 >= spawn_delay && pspawned)
 				{
 					ptimer = 0;
 					if (powerup)
@@ -346,19 +373,18 @@ int main(int argc, char *argv[])
 					pspawned = false;
 				}
 				
-				// Change ship bullets
-				if (petimer / 60 < 10 && powerup_enabled)
+				// Change ship bullets to powerup version for 10 seconds
+				if (petimer / 60 < powerup_buff_time && powerup_enabled)
 				{
-					spaceship.color = PURPLE;
 					petimer++;
 				}
-				else if (petimer / 60 >= 10 && powerup_enabled)
+				else if (petimer / 60 >= powerup_buff_time && powerup_enabled)
 				{
 					petimer = 0;
 					powerup_enabled = false;
-					spaceship.color = GREEN;
 				}
 
+				// If it exists, draw powerup and check for powerup and ship collision.
 				if (powerup)
 				{
 					draw_powerup(powerup);
@@ -373,9 +399,10 @@ int main(int argc, char *argv[])
 					}
 				}
 
+				// Fill in asteroid pointer array
 				for (int i = 0; i < TOTAL_POSSIBLE_ASTEROIDS; i++)
 				{
-					// Only fill out certain number of Asteroids in array to leave room for more after destroying
+					// Checks if array indexes past the STARTING_ASTEROID_NUM are used to avoid overflow for asteroid splitting.
 					bool empty = false;
 					for (int j = STARTING_ASTEROID_NUM; j < TOTAL_POSSIBLE_ASTEROIDS; j++)
 					{
@@ -386,6 +413,7 @@ int main(int argc, char *argv[])
 						}
 						empty = true;
 					}
+					// Only fill out certain number of Asteroids in array to leave room for more after destroying
 					if (!asteroid[i] && i < STARTING_ASTEROID_NUM && empty)
 					{
 						asteroid[i] = malloc(sizeof(Asteroid));
@@ -395,12 +423,14 @@ int main(int argc, char *argv[])
 							error("Could not create asteroid");
 						}
 					}
+					// If an asteroid exists, draw and move it.
 					else if (asteroid[i])
 					{
 						draw_asteroid(asteroid[i]);
 						move_asteroid(asteroid[i]);
 
-						// Check asteroid and spaceship collision
+						// Check asteroid and spaceship collision. If hit, change spaceship color to red, 
+						// if not hit change it to green/purple depending on powerup_enabled state.
 						if (not_hit)
 						{
 							if (collide_ship(asteroid[i], &spaceship))
@@ -409,7 +439,8 @@ int main(int argc, char *argv[])
 								spaceship.color = RED;
 								last_hit = i;
 								spaceship.lives--;
-								not_hit = false;
+								// "not_hit" allows user to escape the asteroid without being hurt again until they leave the asteroid
+								not_hit = false; 
 							}
 							else
 							{
@@ -425,6 +456,7 @@ int main(int argc, char *argv[])
 						}
 						else
 						{
+							// If spaceship has left the asteroid, reset the not_hit value and change spaceship color appropriately
 							if (!collide_ship(asteroid[last_hit], &spaceship))
 							{
 								if (powerup_enabled)
@@ -439,6 +471,8 @@ int main(int argc, char *argv[])
 							}
 						}
 
+						// Checks asteroid positions and determines whether it should wrap around the board of the window or not.
+						// adjustment_calc allows the asteroid to completely disappear from the window before wrapping.
 						float adjustment_calc = (20 * (asteroid[i]->scale));
 						if (asteroid[i]->sy > SCREEN_HEIGHT + adjustment_calc)
 						{
@@ -457,16 +491,18 @@ int main(int argc, char *argv[])
 							asteroid[i]->sx = SCREEN_WIDTH + adjustment_calc;
 						}
 
-						// Check blast collision
+						// Check blast and asteroid collision
 						for (int j = 0; j < TOTAL_POSSIBLE_BLASTS; j++)
 						{
 							if (blast[j] && asteroid[i])
 							{
 								if (collide_blast(asteroid[i], blast[j]))
 								{
+									// Damage the asteroid and check if it's destroyed
 									asteroid[i]->health -= blast[j]->damage;
 									if (asteroid[i]->health <= 0)
 									{
+										// Based on the asteroid's scale, add score and play an asteroid destroy sound
 										if (asteroid[i]->scale == 1)
 										{
 											al_play_sample(sample_asteroid_destroy_1, 0.075, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
@@ -483,12 +519,14 @@ int main(int argc, char *argv[])
 											score += 1000;
 										}
 
+										// If the asteroid's scale is 1 (smallest), then destroy it.
 										if (asteroid[i]->scale == 1)
 										{
 											al_play_sample(sample_asteroid_destroy_1, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 											free(asteroid[i]);
 											asteroid[i] = NULL;
 										}
+										// Splits the asteroid if it doesn't have a scale of 1.
 										else
 										{
 											for (int k = STARTING_ASTEROID_NUM; k < TOTAL_POSSIBLE_ASTEROIDS; k++)
@@ -504,6 +542,7 @@ int main(int argc, char *argv[])
 									}
 									else
 									{
+										// Asteroid hit sound
 										al_play_sample(sample_asteroid_hit, 0.2, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 									}
 									free(blast[j]);
@@ -514,6 +553,7 @@ int main(int argc, char *argv[])
 					}
 				}
 
+				// If ship is alive and player pressed 'shoot' button, create a blast.
 				if (shot && spaceship.lives > 0)
 				{
 					// Finds next available blast pointer to store new blast in
@@ -545,6 +585,7 @@ int main(int argc, char *argv[])
 							{
 								al_play_sample(sample_shoot, 0.1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 							}
+							// Set shot to false so player must repeatedly hit shoot button
 							shot = false;
 							break;
 						}
@@ -555,6 +596,7 @@ int main(int argc, char *argv[])
 					shot = false;
 				}
 
+				// If a blast exists in the pointer array, draw and move it.
 				for (int i = 0; i < 30; i++)
 				{
 					if (blast[i] != NULL)
@@ -562,6 +604,7 @@ int main(int argc, char *argv[])
 						draw_blast(blast[i]);
 						move_blast(blast[i]);
 
+						// If a blast exits the window border, destroy it.
 						if (blast[i]->sx <= 0 || blast[i]->sx >= SCREEN_WIDTH || blast[i]->sy <= 0 || blast[i]->sy >= SCREEN_HEIGHT)
 						{
 							free(blast[i]);
@@ -570,7 +613,7 @@ int main(int argc, char *argv[])
 					}
 				}
 
-				// Test for spaceship reaching boundary
+				// Checks if the spaceship reaches a window border and warps it
 				if (spaceship.sy >= SCREEN_HEIGHT)
 				{
 					spaceship.sy = 0;
@@ -588,6 +631,7 @@ int main(int argc, char *argv[])
 					spaceship.sx = SCREEN_WIDTH;
 				}
 
+				// Calls functions for button presses activated in input thread function
 				if (keys.left)
 				{
 					rotate_ship(&spaceship, LEFT);
@@ -613,7 +657,7 @@ int main(int argc, char *argv[])
 				al_rest(0.01666666667); // Around 60fps
 				ptimer++;
 			}
-			// Free memory
+			// Free memory for powerup, asteroids, and blasts after restarting.
 			if (powerup)
 			{
 				free(powerup);
@@ -630,6 +674,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			
+			// Uninstall, destroy, and shutdown various allegro addons and tools if player closes game.
 			if (closed)
 			{
 				al_destroy_font(font100);
