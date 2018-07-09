@@ -1,4 +1,6 @@
 # Blasteroids
+![Blasteroids Banner](https://puu.sh/ATkvJ/5763a47018.png)
+
 Blasteroids is a modern Asteroids-like game where you control a ship and survive by dodging, shooting, and destroying oncoming asteroids!
 
 ## Controls
