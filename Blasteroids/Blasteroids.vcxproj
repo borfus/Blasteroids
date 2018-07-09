@@ -74,7 +74,7 @@
     <Allegro_AddonPrimitives>true</Allegro_AddonPrimitives>
     <IncludePath>C:\Users\borfus\Documents\windows pthread\Pre-built.2\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\borfus\Documents\windows pthread\Pre-built.2\lib;$(LibraryPath)</LibraryPath>
-    <Allegro_AddonImage>false</Allegro_AddonImage>
+    <Allegro_AddonImage>true</Allegro_AddonImage>
     <Allegro_AddonTTF>true</Allegro_AddonTTF>
     <Allegro_AddonFont>true</Allegro_AddonFont>
     <Allegro_AddonAudio>true</Allegro_AddonAudio>
@@ -89,7 +89,7 @@
     <Allegro_AddonTTF>true</Allegro_AddonTTF>
     <Allegro_AddonPrimitives>true</Allegro_AddonPrimitives>
     <Allegro_AddonFont>true</Allegro_AddonFont>
-    <Allegro_AddonImage>false</Allegro_AddonImage>
+    <Allegro_AddonImage>true</Allegro_AddonImage>
     <Allegro_AddonAudio>true</Allegro_AddonAudio>
     <Allegro_AddonAcodec>true</Allegro_AddonAcodec>
     <Allegro_AddonPhysfs>false</Allegro_AddonPhysfs>
@@ -178,7 +178,19 @@
     <ClInclude Include="blasteroids.h" />
     <ClInclude Include="gui.h" />
     <ClInclude Include="powerup.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="spaceship.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Blasteroids.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\..\Desktop\Blasteroids-Icon.ico" />
+    <Image Include="..\..\..\..\Desktop\Blasteroids-Icon.png" />
+    <Image Include="..\..\..\..\desktop\icon1.ico" />
+    <Image Include="Blasteroids-Icon.ico" />
+    <Image Include="Blasteroids-Icon.png" />
+    <Image Include="icon1.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

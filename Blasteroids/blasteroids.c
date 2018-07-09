@@ -18,6 +18,7 @@
 // Allegro includes
 #define ALLEGRO_STATICLINK
 #include <allegro5/allegro.h>
+#include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
@@ -255,12 +256,16 @@ int main(int argc, char *argv[])
 	al_install_audio();
 	al_init_acodec_addon();
 	al_init_primitives_addon();
+	al_init_image_addon();
 	al_init_font_addon();
 	al_init_ttf_addon();
 	al_install_keyboard();
 	al_install_joystick();
 	al_set_new_display_flags(ALLEGRO_WINDOWED);
 	display = al_create_display(SCREEN_WIDTH, SCREEN_HEIGHT);
+	al_set_window_title(display, "BLASTEROIDS");
+	ALLEGRO_BITMAP *icon = al_load_bitmap("Blasteroids-Icon.png");
+	al_set_display_icon(display, icon);
 	al_reserve_samples(100);
 
 	// Sound files used in Blasteroids
@@ -282,6 +287,9 @@ int main(int argc, char *argv[])
 	ALLEGRO_FONT *font100 = al_load_font("font.ttf", 100, 0);
 	ALLEGRO_FONT *font30 = al_load_font("font.ttf", 30, 0);
 	ALLEGRO_FONT *font18 = al_load_font("font.ttf", 18, 0);
+
+	// Explosion spritesheet setup
+	ALLEGRO_BITMAP *explosion = al_load_bitmap("pixel explosion spritesheet transparent.png");
 
 	// Main game loop start. Outer loop that determines whether game exits completely or not.
 	while (!closed)
@@ -320,6 +328,18 @@ int main(int argc, char *argv[])
 			bool pspawned = false;
 			bool powerup_enabled = false;
 			int petimer = 0;
+
+			// Explosion animation properties
+			int current_frame = 0;
+			int frame_count = 9;
+			int frame_delay = 4;
+			int frame_width = 64;
+			int frame_height = 64;
+			int frame_sx = 0;
+			int frame_sy = 0;
+			int frame_timer = 0;
+			bool explosion_active = false;
+
 			// Main game loop determines whether the user has restarted the game or not.
 			while (!restart && !closed)
 			{
@@ -346,7 +366,7 @@ int main(int argc, char *argv[])
 				}
 
 				// Spawn powerup after 30 seconds
-				int spawn_time = 5;
+				int spawn_time = 30;
 				int spawn_delay = 7;
 				int powerup_buff_time = 10;
 				if (ptimer / 60 >= spawn_time && !pspawned)
@@ -397,6 +417,30 @@ int main(int argc, char *argv[])
 						free(powerup);
 						powerup = NULL;
 					}
+				}
+
+				// Takes the explosion spritesheet and animates it at the position of the destroyed asteroid.
+				if (explosion_active)
+				{
+					ALLEGRO_TRANSFORM transform;
+					al_identity_transform(&transform);
+					al_translate_transform(&transform, frame_sx, frame_sy);
+					al_use_transform(&transform);
+
+					if (frame_timer >= frame_delay)
+					{
+						current_frame++;
+						frame_timer = 0;
+					}
+
+					al_draw_bitmap_region(explosion, (current_frame * frame_width), 0, frame_width, frame_height, 0, 0, 0);
+
+					if (current_frame > frame_count)
+					{
+						explosion_active = false;
+						current_frame = 0;
+					}
+					frame_timer++;
 				}
 
 				// Fill in asteroid pointer array
@@ -502,6 +546,11 @@ int main(int argc, char *argv[])
 									asteroid[i]->health -= blast[j]->damage;
 									if (asteroid[i]->health <= 0)
 									{
+										// Start explosion animation
+										explosion_active = true;
+										frame_sx = asteroid[i]->sx;
+										frame_sy = asteroid[i]->sy;
+
 										// Based on the asteroid's scale, add score and play an asteroid destroy sound
 										if (asteroid[i]->scale == 1)
 										{
@@ -677,6 +726,8 @@ int main(int argc, char *argv[])
 			// Uninstall, destroy, and shutdown various allegro addons and tools if player closes game.
 			if (closed)
 			{
+				al_destroy_bitmap(explosion);
+				al_destroy_bitmap(icon);
 				al_destroy_font(font100);
 				al_destroy_font(font30);
 				al_destroy_font(font18);
@@ -692,6 +743,7 @@ int main(int argc, char *argv[])
 				al_destroy_sample(sample_asteroid_destroy_2);
 				al_destroy_sample(sample_asteroid_destroy_3);
 				al_uninstall_audio();
+				al_shutdown_image_addon();
 				al_shutdown_primitives_addon();
 				al_shutdown_ttf_addon();
 				al_shutdown_font_addon();
